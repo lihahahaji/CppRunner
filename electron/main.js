@@ -102,10 +102,10 @@ async function runCPP(event,codeText) {
 // 在应用准备就绪时调用函数 创建窗口
 app.whenReady().then(() => {
 
-	ipcMain.handle("runCPP", async (event,codeText) =>{
-        console.log(codeText)
-        const cmd = "echo '"+codeText+"' > code.cpp && g++ code.cpp && ./a.out"
-        // console.log(cmd)
+	ipcMain.handle("runCPP", async (event,codeText,inputText) =>{
+        console.log(codeText,inputText)
+        const cmd = "echo '"+ inputText +"' > ./cpp/input.txt  && echo '"+codeText+"' > ./cpp/code.cpp && g++ ./cpp/code.cpp -o ./cpp/out && ./cpp/out"
+        console.log(cmd)
         try{
             const { stdout, stderr } = await exec(cmd);
             return stdout

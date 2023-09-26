@@ -1,11 +1,33 @@
 <template>
 	<div id="container" @resize="resizeListener">
 		<!-- 右侧抽屉(预处理/主函数) -->
-		<el-drawer v-model="drawerRightVisible" title="Drawer" :with-header="false">
+		<el-drawer
+			v-model="drawerRightVisible"
+			title="Drawer"
+			:with-header="false"
+			style="background-color: black"
+			size="50%"
+		>
+			<div id="rightDrawerContainer">
+				<div class="codeMirror_right">
+					<Codemirror
+						v-model:value="includeText"
+						:options="cmOptions_1"
+						className="code-mirror "
+						height="100%"
+					/>
+				</div>
+				<div class="codeMirror_right">
+					<!-- 主函数 -->
+					<Codemirror
+						v-model:value="mainText"
+						:options="cmOptions_1"
+						className="code-mirror "
+						height="100%"
+					/>
+				</div>
+			</div>
 			<!-- 预处理 -->
-			<Codemirror height="300px" />
-			<!-- 主函数 -->
-			<Codemirror height="300px" />
 		</el-drawer>
 
 		<!-- 底部抽屉(输入) -->
@@ -23,9 +45,11 @@
 					id="InputArea"
 					:options="optionsForInputArea"
 					class="code-mirror"
-					height="100%"
 					v-model:value="inputText"
 					style="width: 100%"
+					KeepCursorInEnd="true"
+					className="code-mirror "
+					height="100%"
 				/>
 			</div>
 		</el-drawer>
@@ -60,14 +84,14 @@
 		</div>
 
 		<Codemirror
-			v-model:value="code"
+			v-model:value="solveCode"
 			:options="cmOptions"
 			placeholder=""
 			@change="change"
 			KeepCursorInEnd="true"
 			:tabSize="4"
 			@ready="onCmReady"
-			className="code-mirror "
+			className="code-mirror"
 			:height="codeMirrorHeight"
 		/>
 
@@ -88,7 +112,7 @@
 				<Codemirror
 					v-model:value="runner_result"
 					:options="optionsForOutPutArea"
-					class="code-mirror"
+					className="code-mirror "
 					height="150px"
 				/>
 			</div>
@@ -144,16 +168,19 @@ import "codemirror/addon/scroll/simplescrollbars.css";
 import "codemirror/addon/scroll/simplescrollbars";
 
 // element-plus icon
-import { CaretRight, Operation, DocumentCopy,Refresh } from "@element-plus/icons-vue";
+import {
+	CaretRight,
+	Operation,
+	DocumentCopy,
+	Refresh,
+} from "@element-plus/icons-vue";
 
 import { ElMessage } from "element-plus";
 
 export default {
-	components: { Codemirror, CaretRight, Operation, DocumentCopy,Refresh },
+	components: { Codemirror, CaretRight, Operation, DocumentCopy, Refresh },
 	data() {
 		return {
-			code: '#include <iostream>\nusing namespace std;\nint main(){\n\tcout<<"helloworld"<<endl;\n}\n',
-			initCode: '#include <iostream>\nusing namespace std;\nint main(){\n\tcout<<"helloworld"<<endl;\n}\n',
 			cmOptions: {
 				mode: "text/x-c++src", // Language mode
 				theme: "panda-syntax", // Theme
@@ -173,6 +200,25 @@ export default {
 				lineNumbers: true,
 				scrollbarStyle: "overlay",
 			},
+			cmOptions_1: {
+				mode: "text/x-c++src", // Language mode
+				theme: "panda-syntax", // Theme
+				autoCloseBrackets: true, // 自动闭合符号
+				matchBrackets: true, // 在光标点击紧挨{、]括号左、右侧时，自动突出显示匹配的括号 }、]
+				// lineWrapping: true,
+				indentUnit: 4,
+				indentWithTabs: true, // 使用 tab 来缩进
+				// viewportMargin: 1000,
+				highlightSelectionMatches: {
+					// 选中高亮
+					minChars: 2,
+					trim: true,
+					style: "matchhighlight",
+					showToken: false,
+				},
+				lineNumbers: false,
+				scrollbarStyle: "overlay",
+			},
 			optionsForOutPutArea: {
 				mode: "shell", // Language mode
 				theme: "panda-syntax", // Theme
@@ -187,7 +233,16 @@ export default {
 				placeholder: "Input",
 				scrollbarStyle: "overlay",
 			},
+			optionsForRightArea: {
+				mode: "text/x-c++src", // Language mode
+				theme: "panda-syntax", // Theme
+				lineNumbers: false,
+				// placeholder: "Input",
+				scrollbarStyle: "overlay",
+				height: "100px",
+			},
 			codeMirrorHeight: window.innerHeight + "px",
+			rightDrawerCodeHeight: window.innerHeight * 0.4 + "px",
 			runnerLoading: false,
 			dialogVisible: false,
 			runner_result: "",
@@ -196,20 +251,25 @@ export default {
 			drawerBottomVisible: false,
 			drawerRightVisible: false,
 			inputText: "",
+			code: "void solve()\n{\n\t\n}",
+			solveCode:"void solve()\n{\n\t\n}",
+			initCode: "void solve()\n{\n\t\n}",
+			mainText:
+				'int main()\n{\n\tfreopen("./cpp/input.txt","r",stdin);\n\tsolve();\n\treturn 0;\n}',
+			includeText: "#include <iostream>\nusing namespace std;\n",
 		};
 	},
 	methods: {
 		// 重置代码
-		reloadCode()
-		{
+		reloadCode() {
 			ElMessage.closeAll();
 			ElMessage({
 				message: "Reload Code",
 				type: "success",
 			});
 
-			this.code = this.initCode;
-		},	
+			this.solveCode = this.initCode;
+		},
 		// 复制代码
 		copyCode() {
 			console.log("copy Code");
@@ -229,7 +289,8 @@ export default {
 
 			this.runner_result = "";
 
-			const output = await window.electronAPI.runCPP(this.code);
+			this.code = this.includeText + this.solveCode + this.mainText; 
+			const output = await window.electronAPI.runCPP(this.code, this.inputText);
 
 			this.runnerLoading = false;
 			this.runner_result = output;
@@ -270,6 +331,8 @@ export default {
 			if (this.header_visibility)
 				this.codeMirrorHeight = window.innerHeight - 30 + "px";
 			else this.codeMirrorHeight = window.innerHeight + "px";
+
+			// this.rightDrawerCodeHeight = window.innerHeight * 0.4 + "px";
 		},
 		// 关闭运行结果的对话框
 		closeRunDialog() {
@@ -286,23 +349,20 @@ export default {
 
 				// 在这里执行你想要的函数
 				this.RunCode();
-			}
-			else if ((event.metaKey || event.ctrlKey) && event.key === "t") {
+			} else if ((event.metaKey || event.ctrlKey) && event.key === "t") {
 				// 阻止默认的刷新行为
 				event.preventDefault();
 
 				// 在这里执行你想要的函数
 				this.header_visibility = !this.header_visibility;
 				this.resizeListener();
-			}
-			else if ((event.metaKey || event.ctrlKey) && event.key === "i") {
+			} else if ((event.metaKey || event.ctrlKey) && event.key === "i") {
 				// 阻止默认的刷新行为
 				event.preventDefault();
 
 				// 在这里执行你想要的函数
 				this.showBottomDrawer();
-			}
-			else if ((event.metaKey || event.ctrlKey) && event.key === "d") {
+			} else if ((event.metaKey || event.ctrlKey) && event.key === "d") {
 				// 阻止默认的刷新行为
 				event.preventDefault();
 
@@ -338,7 +398,7 @@ export default {
 	/* -webkit-app-region: drag; */
 	/* flex: 1; */
 	/* width: 100%; */
-	/* height:100%; */
+	height: 100%;
 }
 
 #Header {
@@ -364,17 +424,6 @@ export default {
 	flex-direction: column;
 }
 
-.CodeMirror {
-	height: auto;
-}
-
-.CodeMirror-scroll {
-	height: 100%;
-	overflow-y: hidden;
-	overflow-x: auto;
-	background-color: rgb(31, 31, 32);
-}
-
 .button_shape {
 	height: 20px;
 	width: 20px;
@@ -386,5 +435,17 @@ export default {
 	align-items: center;
 	height: 100%;
 	padding-right: 10px;
+}
+#rightDrawerContainer {
+	height: 100%;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
+	background-color: black;
+}
+
+.codeMirror_right {
+	height: 45%;
 }
 </style>
