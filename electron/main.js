@@ -87,10 +87,20 @@ const createWindow = () => {
 					accelerator: "Cmd+Shift+Z",
 					click: () => {},
 				},
+				{
+					role: "zoomin",
+					accelerator: "Cmd+Plus",
+					click: () => {},
+				},
+				{
+					role: "zoomout",
+					accelerator: "Cmd+-",
+					click: () => {},
+				},
 			],
 		})
 	);
-	// Menu.setApplicationMenu(menu);
+	Menu.setApplicationMenu(menu);
 };
 
 async function runCPP(event,codeText) {

@@ -362,7 +362,7 @@ export default {
 
 				// 在这里执行你想要的函数
 				this.showBottomDrawer();
-			} else if ((event.metaKey || event.ctrlKey) && event.key === "d") {
+			} else if ((event.metaKey || event.ctrlKey) && event.key === "m") {
 				// 阻止默认的刷新行为
 				event.preventDefault();
 
