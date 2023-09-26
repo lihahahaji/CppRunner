@@ -9,6 +9,7 @@ const {
 } = require("electron");
 
 const path = require("path");
+const { stdout } = require("process");
 const { promisify } = require("util");
 const exec = promisify(require("child_process").exec);
 // app，它着您应用程序的事件生命周期。
@@ -89,16 +90,32 @@ const createWindow = () => {
 			],
 		})
 	);
-	Menu.setApplicationMenu(menu);
+	// Menu.setApplicationMenu(menu);
 };
 
-async function runCPP() {
+async function runCPP(event,codeText) {
+    console.log(codeText)
 	const { stdout, stderr } = await exec("g++ code.cpp && ./a.out");
 	return stdout;
 }
 
 // 在应用准备就绪时调用函数 创建窗口
 app.whenReady().then(() => {
-	ipcMain.handle("runCPP", runCPP);
+
+	ipcMain.handle("runCPP", async (event,codeText) =>{
+        console.log(codeText)
+        const cmd = "echo '"+codeText+"' > code.cpp && g++ code.cpp && ./a.out"
+        // console.log(cmd)
+        try{
+            const { stdout, stderr } = await exec(cmd);
+            return stdout
+        }catch(e)
+        {
+            return e.stderr
+        }
+        
+        
+    });
+
 	createWindow();
 });
