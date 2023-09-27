@@ -28,9 +28,9 @@ const createWindow = () => {
 		},
 	});
 	// 加载静态页面
-	//   win.loadFile('index.html')
+	win.loadFile("./dist/index.html");
 	// 加载网址
-	win.loadURL("http://localhost:5173/");
+	// win.loadURL("http://localhost:5173/");
 
 	win.once("ready-to-show", () => {
 		win.show();
@@ -97,35 +97,102 @@ const createWindow = () => {
 					accelerator: "Cmd+-",
 					click: () => {},
 				},
+				{
+					role: "toggleDevTools",
+					accelerator: "Cmd+Option+I",
+					click: () => {},
+				},
 			],
 		})
 	);
 	Menu.setApplicationMenu(menu);
 };
 
-async function runCPP(event,codeText) {
-    console.log(codeText)
+async function runCPP(event, codeText) {
+	console.log(codeText);
 	const { stdout, stderr } = await exec("g++ code.cpp && ./a.out");
 	return stdout;
 }
 
+
+
 // 在应用准备就绪时调用函数 创建窗口
 app.whenReady().then(() => {
+	
 
-	ipcMain.handle("runCPP", async (event,codeText,inputText) =>{
-        console.log(codeText,inputText)
-        const cmd = "echo '"+ inputText +"' > ./cpp/input.txt  && echo '"+codeText+"' > ./cpp/code.cpp && g++ ./cpp/code.cpp -o ./cpp/out && ./cpp/out"
-        console.log(cmd)
-        try{
-            const { stdout, stderr } = await exec(cmd);
-            return stdout
-        }catch(e)
-        {
-            return e.stderr
-        }
-        
-        
-    });
+	const resourcesPath = app.getAppPath();
+	// 获取实际程序中 cpp 目录的文件路径
+	const CppPath = resourcesPath.substring(0, resourcesPath.lastIndexOf('/'));
+	// process.chdir(distPath);
+
+
+	// 初始化 solve 内容
+	ipcMain.handle("initSolve",async (event) => {
+		// console.log(event);
+		const cmd = "cat "+CppPath+"/cpp/solve.txt";
+		console.log(cmd);
+		try {
+			const { stdout, stderr } = await exec(cmd);
+			return stdout;
+		} catch (e) {
+			return e.stderr;
+		}
+	});
+
+	// 初始化 include 内容
+	ipcMain.handle("initInclude",async (event) => {
+		// console.log(event);
+		const cmd = "cat "+CppPath+"/cpp/include.cpp";
+		console.log(cmd);
+		try {
+			const { stdout, stderr } = await exec(cmd);
+			return stdout;
+		} catch (e) {
+			return e.stderr;
+		}
+	});
+
+	// 保存代码
+	ipcMain.handle("saveCode",async (event,solveCode,includeText) => {
+		// console.log(event);
+		console.log(solveCode)
+		console.log(includeText)
+		const cmd = "echo '"+includeText+"' > "+CppPath+"/cpp/include.cpp && echo '"+solveCode+"' > "+CppPath+"/cpp/solve.txt";
+		console.log(cmd);
+		try {
+			const { stdout, stderr } = await exec(cmd);
+			return stdout;
+		} catch (e) {
+			return e.stderr;
+		}
+	});
+
+	// 初始化 main 内容
+	ipcMain.handle("initMain",async (event) => {
+		// console.log(event);
+		const inputFilePath = CppPath + "/cpp/input.txt";
+		const res = "int main()\n{\n\tios::sync_with_stdio(0);\n\tcin.tie(0);\n\t#ifndef ONLINE_JUDGE\n\tfreopen(\""+inputFilePath+"\",\"r\",stdin);\n\t#endif\n\tsolve();\n}"
+		return res;
+	});
+
+	ipcMain.handle("runCPP", async (event, codeText, inputText) => {
+		console.log(codeText, inputText);
+		const cmd =
+			"echo '" +
+			inputText +
+			"' > "+CppPath+"/cpp/input.txt  && echo '" +
+			codeText +
+			"' > "+CppPath+"/cpp/code.cpp && g++ "+CppPath+"/cpp/code.cpp -o "+CppPath+"/cpp/out && "+CppPath+"/cpp/out";
+		console.log(cmd);
+		try {
+			const { stdout, stderr } = await exec(cmd);
+			// return resourcesPath;
+			return stdout;
+		} catch (e) {
+			return e.stderr;
+			// return resourcesPath;
+		}
+	});
 
 	createWindow();
 });

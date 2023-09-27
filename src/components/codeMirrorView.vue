@@ -5,11 +5,11 @@
 			v-model="drawerRightVisible"
 			title="Drawer"
 			:with-header="false"
-			style="background-color: black"
+			style="background-color: rgb(39, 40, 50)"
 			size="50%"
 		>
 			<div id="rightDrawerContainer">
-				<div class="codeMirror_right">
+				<div class="codeMirror_right_1">
 					<Codemirror
 						v-model:value="includeText"
 						:options="cmOptions_1"
@@ -17,11 +17,11 @@
 						height="100%"
 					/>
 				</div>
-				<div class="codeMirror_right">
+				<div class="codeMirror_right_2">
 					<!-- 主函数 -->
 					<Codemirror
 						v-model:value="mainText"
-						:options="cmOptions_1"
+						:options="cmOptions_2"
 						className="code-mirror "
 						height="100%"
 					/>
@@ -38,7 +38,7 @@
 			direction="btt"
 			size="40%"
 			@opened="BottomDrawerOpened"
-			style="background-color: black"
+			style="background-color: rgb(39, 40, 50)"
 		>
 			<div style="height: 100%">
 				<Codemirror
@@ -53,6 +53,7 @@
 				/>
 			</div>
 		</el-drawer>
+
 		<!-- 头部标签栏(默认不可见) -->
 		<div id="Header" v-show="header_visibility">
 			<!-- 可拖拽区域 -->
@@ -60,24 +61,31 @@
 
 			<!-- 按钮区域 -->
 			<div id="buttonContainer">
-				<!-- 运行按钮 -->
-				<el-tooltip content="RunCode" placement="top">
-					<el-button type="success" @click="RunCode" class="button_shape">
-						<el-icon><CaretRight /></el-icon>
-					</el-button>
-				</el-tooltip>
-
 				<!-- 复制代码按钮 -->
 				<el-tooltip content="CopyCode" placement="top">
-					<el-button type="primary" @click="copyCode" class="button_shape">
+					<el-button type="default" @click="copyCode" class="button_shape">
 						<el-icon><DocumentCopy /></el-icon>
 					</el-button>
 				</el-tooltip>
 
 				<!-- 初始化代码按钮 -->
 				<el-tooltip content="ReLoad" placement="top">
-					<el-button type="primary" @click="reloadCode" class="button_shape">
+					<el-button type="default" @click="reloadCode" class="button_shape">
 						<el-icon><Refresh /></el-icon>
+					</el-button>
+				</el-tooltip>
+
+				<!-- 保存代码按钮 -->
+				<el-tooltip content="Save" placement="top">
+					<el-button type="default" @click="saveCode" class="button_shape">
+						<el-icon><DocumentChecked /></el-icon>
+					</el-button>
+				</el-tooltip>
+
+				<!-- 运行按钮 -->
+				<el-tooltip content="RunCode" placement="top">
+					<el-button type="success" @click="RunCode" class="button_shape">
+						<el-icon><CaretRight /></el-icon>
 					</el-button>
 				</el-tooltip>
 			</div>
@@ -93,6 +101,7 @@
 			@ready="onCmReady"
 			className="code-mirror"
 			:height="codeMirrorHeight"
+			ref="SolveCodeMirror"
 		/>
 
 		<el-dialog
@@ -104,6 +113,7 @@
 			:show-close="showcase"
 			@close="closeRunDialog"
 			destroy-on-close
+			style="background-color: rgb(73, 74, 88)"
 		>
 			<div
 				style="height: auto; width: 100%; background-color: black"
@@ -173,12 +183,20 @@ import {
 	Operation,
 	DocumentCopy,
 	Refresh,
+	DocumentChecked,
 } from "@element-plus/icons-vue";
 
 import { ElMessage } from "element-plus";
 
 export default {
-	components: { Codemirror, CaretRight, Operation, DocumentCopy, Refresh },
+	components: {
+		DocumentChecked,
+		Codemirror,
+		CaretRight,
+		Operation,
+		DocumentCopy,
+		Refresh,
+	},
 	data() {
 		return {
 			cmOptions: {
@@ -199,6 +217,11 @@ export default {
 				},
 				lineNumbers: true,
 				scrollbarStyle: "overlay",
+				extraKeys: {
+					"Cmd-D": function (cm) {
+						// console.log("asd");
+					},
+				},
 			},
 			cmOptions_1: {
 				mode: "text/x-c++src", // Language mode
@@ -218,6 +241,26 @@ export default {
 				},
 				lineNumbers: false,
 				scrollbarStyle: "overlay",
+			},
+			cmOptions_2: {
+				mode: "text/x-c++src", // Language mode
+				theme: "panda-syntax", // Theme
+				autoCloseBrackets: true, // 自动闭合符号
+				matchBrackets: true, // 在光标点击紧挨{、]括号左、右侧时，自动突出显示匹配的括号 }、]
+				// lineWrapping: true,
+				indentUnit: 4,
+				indentWithTabs: true, // 使用 tab 来缩进
+				// viewportMargin: 1000,
+				highlightSelectionMatches: {
+					// 选中高亮
+					minChars: 2,
+					trim: true,
+					style: "matchhighlight",
+					showToken: false,
+				},
+				lineNumbers: false,
+				scrollbarStyle: "overlay",
+				readOnly: true,
 			},
 			optionsForOutPutArea: {
 				mode: "shell", // Language mode
@@ -252,7 +295,7 @@ export default {
 			drawerRightVisible: false,
 			inputText: "",
 			code: "void solve()\n{\n\t\n}",
-			solveCode:"void solve()\n{\n\t\n}",
+			solveCode: "void solve()\n{\n\t\n}",
 			initCode: "void solve()\n{\n\t\n}",
 			mainText:
 				'int main()\n{\n\tfreopen("./cpp/input.txt","r",stdin);\n\tsolve();\n\treturn 0;\n}',
@@ -260,8 +303,36 @@ export default {
 		};
 	},
 	methods: {
+		// 创建一个函数，将文本复制到剪贴板
+		copyToClipboard() {
+			// 创建一个临时的文本区域元素
+			const textArea = document.createElement("textarea");
+			textArea.value =
+				this.includeText + "\n" + this.solveCode + "\n" + this.mainText;
+
+			// 将文本区域元素添加到文档中
+			document.body.appendChild(textArea);
+
+			// 选择文本
+			textArea.select();
+
+			try {
+				// 尝试复制文本到剪贴板
+				document.execCommand("copy");
+				// console.log("已成功复制到剪贴板:", text);
+			} catch (err) {
+				// console.error("复制到剪贴板失败:", err);
+			}
+
+			// 清理临时文本区域元素
+			document.body.removeChild(textArea);
+		},
+
 		// 重置代码
 		reloadCode() {
+			// this.$refs.SolveCodeMirror.setCursor(2, 0);
+			console.log(this.$refs.SolveCodeMirror);
+
 			ElMessage.closeAll();
 			ElMessage({
 				message: "Reload Code",
@@ -273,6 +344,7 @@ export default {
 		// 复制代码
 		copyCode() {
 			console.log("copy Code");
+			this.copyToClipboard();
 			ElMessage.closeAll();
 			ElMessage({
 				message: "Copyed",
@@ -289,7 +361,7 @@ export default {
 
 			this.runner_result = "";
 
-			this.code = this.includeText + this.solveCode + this.mainText; 
+			this.code = this.includeText + this.solveCode + this.mainText;
 			const output = await window.electronAPI.runCPP(this.code, this.inputText);
 
 			this.runnerLoading = false;
@@ -312,6 +384,7 @@ export default {
 			// console.log("显示抽屉");
 			if (this.drawerBottomVisible) this.drawerBottomVisible = false;
 			this.drawerRightVisible = !this.drawerRightVisible;
+			console.log(this.includeText);
 		},
 
 		onCmReady(cm) {
@@ -338,6 +411,27 @@ export default {
 		closeRunDialog() {
 			this.runner_result = "";
 		},
+		async initData() {
+			this.solveCode = await window.electronAPI.initSolve();
+			this.mainText = await window.electronAPI.initMain();
+			this.includeText = await window.electronAPI.initInclude();
+		},
+		async saveCode() {
+			console.log(this.includeText);
+			console.log(this.solveCode);
+
+			const message = await window.electronAPI.saveCode(
+				this.solveCode,
+				this.includeText
+			);
+
+			// 保存代码
+			ElMessage({
+				message: "Saved",
+				// messag:this.includeText,
+				type: "success",
+			});
+		},
 	},
 	mounted() {
 		window.addEventListener("resize", this.resizeListener);
@@ -356,7 +450,7 @@ export default {
 				// 在这里执行你想要的函数
 				this.header_visibility = !this.header_visibility;
 				this.resizeListener();
-			} else if ((event.metaKey || event.ctrlKey) && event.key === "i") {
+			} else if ((event.metaKey || event.ctrlKey) && event.key === "d") {
 				// 阻止默认的刷新行为
 				event.preventDefault();
 
@@ -369,14 +463,31 @@ export default {
 				// 在这里执行你想要的函数
 				this.showRightDrawer();
 			}
-			// 复制代码 shift + cmd + c;
-			else if (event.metaKey && event.shiftKey && event.key === "c") {
+			// 复制代码 cmd + c;
+			else if (event.metaKey && event.key === "o") {
 				// 阻止默认的刷新行为
 				event.preventDefault();
 
 				// 在这里执行你想要的函数
 				this.copyCode();
 			}
+			// 保存代码到本地
+			else if ((event.metaKey || event.ctrlKey) && event.key === "s") {
+				// 阻止默认的刷新行为
+				event.preventDefault();
+
+				// 在这里执行你想要的函数
+				this.saveCode();
+			}
+			// 初始化代码 cmd + i;
+			else if (event.metaKey && event.key === "i") {
+				// 阻止默认的刷新行为
+				event.preventDefault();
+
+				// 在这里执行你想要的函数
+				this.reloadCode();
+			}
+
 			// 复制代码 shift + cmd + r;
 			// else if (event.metaKey && event.shiftKey && event.key === "r") {
 			// 	// 阻止默认的刷新行为
@@ -386,6 +497,8 @@ export default {
 			// 	this.reloadCode();
 			// }
 		});
+
+		this.initData();
 	},
 };
 </script>
@@ -405,7 +518,7 @@ export default {
 	/* -webkit-app-region: drag; */
 	height: 30px;
 	width: 100%;
-	background-color: black;
+	background-color: rgb(39, 40, 50);
 	display: flex;
 	justify-content: end;
 }
@@ -442,10 +555,14 @@ export default {
 	display: flex;
 	flex-direction: column;
 	justify-content: space-around;
-	background-color: black;
+	background-color: rgb(39, 40, 50);
 }
 
-.codeMirror_right {
-	height: 45%;
+.codeMirror_right_1 {
+	height: 70%;
+}
+
+.codeMirror_right_2 {
+	height: 20%;
 }
 </style>
