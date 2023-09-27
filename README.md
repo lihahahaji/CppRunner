@@ -128,7 +128,7 @@ solve 函数中的内容会被初始化为空
 
     
 
-## Prject Tree
+## Project Tree
 ```
 CppRunner
 ├─ .git
