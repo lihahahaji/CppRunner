@@ -120,7 +120,7 @@ solve 函数中的内容会被初始化为空
 
 * 将 app 移动到 applications 目录下
 
-* 安装 g++
+* 安装 g++ (安装过 Xcode 就不用执行此步骤)
 
     ```
     brew install g++
@@ -175,7 +175,7 @@ CppRunner
 
 
 
-## 关于 CppRunner 目前存在的BUG
+## 关于 CppRunner 目前存在的一些待改进的问题
 
 1. 剪切快捷键无法使用
 2. 退出自动保存
