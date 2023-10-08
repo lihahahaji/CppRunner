@@ -12,6 +12,8 @@ const path = require("path");
 const { stdout } = require("process");
 const { promisify } = require("util");
 const exec = promisify(require("child_process").exec);
+const fs = require('fs'); // 引入文件系统模块
+
 // app，它着您应用程序的事件生命周期。
 // BrowserWindow，它负责创建和管理应用窗口。
 
@@ -153,18 +155,37 @@ app.whenReady().then(() => {
 	});
 
 	// 保存代码
-	ipcMain.handle("saveCode",async (event,solveCode,includeText) => {
+	ipcMain.handle("saveCode",(event,solveCode,includeText) => {
 		// console.log(event);
 		console.log(solveCode)
 		console.log(includeText)
-		const cmd = "echo '"+includeText+"' > "+CppPath+"/cpp/include.cpp && echo '"+solveCode+"' > "+CppPath+"/cpp/solve.txt";
-		console.log(cmd);
-		try {
-			const { stdout, stderr } = await exec(cmd);
-			return stdout;
-		} catch (e) {
-			return e.stderr;
-		}
+		// const cmd = "echo '"+includeText+"' > "+CppPath+"/cpp/include.cpp && echo '"+solveCode+"' > "+CppPath+"/cpp/solve.txt";
+		const includeFileName = CppPath+"/cpp/include.cpp"
+		const solveFileName = CppPath+"/cpp/solve.txt"
+		fs.writeFile(includeFileName, includeText, (err) => {
+			if (err) {
+				console.error('写入文件时出错：', err);
+			} else {
+				console.log('文件写入成功！');
+			}
+		});
+
+		fs.writeFile(solveFileName, solveCode, (err) => {
+			if (err) {
+				console.error('写入文件时出错：', err);
+			} else {
+				console.log('文件写入成功！');
+			}
+		});
+
+
+		// console.log(cmd);
+		// try {
+		// 	const { stdout, stderr } = await exec(cmd);
+		// 	return stdout;
+		// } catch (e) {
+		// 	return e.stderr;
+		// }
 	});
 
 	// 初始化 main 内容
@@ -175,14 +196,30 @@ app.whenReady().then(() => {
 		return res;
 	});
 
+	// 运行代码
 	ipcMain.handle("runCPP", async (event, codeText, inputText) => {
 		console.log(codeText, inputText);
-		const cmd =
-			"echo '" +
-			inputText +
-			"' > "+CppPath+"/cpp/input.txt  && echo '" +
-			codeText +
-			"' > "+CppPath+"/cpp/code.cpp && g++ "+CppPath+"/cpp/code.cpp -o "+CppPath+"/cpp/out && "+CppPath+"/cpp/out";
+
+		const inputFileName = CppPath+"/cpp/input.txt";
+		const codeFileName = CppPath+"/cpp/code.cpp"
+
+		fs.writeFile(inputFileName, inputText, (err) => {
+			if (err) {
+				console.error('写入文件时出错：', err);
+			} else {
+				console.log('文件写入成功！');
+			}
+		});
+
+		fs.writeFile(codeFileName, codeText, (err) => {
+			if (err) {
+				console.error('写入文件时出错：', err);
+			} else {
+				console.log('文件写入成功！');
+			}
+		});
+
+		const cmd = "g++ "+CppPath+"/cpp/code.cpp -o "+CppPath+"/cpp/out && "+CppPath+"/cpp/out";
 		console.log(cmd);
 		try {
 			const { stdout, stderr } = await exec(cmd);
