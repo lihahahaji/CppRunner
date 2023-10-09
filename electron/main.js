@@ -104,6 +104,11 @@ const createWindow = () => {
 					accelerator: "Cmd+Option+I",
 					click: () => {},
 				},
+				{
+					role: "cut",
+					accelerator: "Cmd+X",
+					click: () => {},
+				},
 			],
 		})
 	);
