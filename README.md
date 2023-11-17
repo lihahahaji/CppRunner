@@ -1,7 +1,6 @@
 # CPP Runner
 <img src="assets/icon.png" alt="icon" style="zoom:25%;" />
 
-> ####  一款面向 OnlineJudge 的 c++ 编辑器
 
 
 
